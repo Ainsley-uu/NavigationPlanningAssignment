@@ -4,8 +4,13 @@ import copy
 import random
 import math
 from dwa import Dwa
-import vision as VS
+# import vision as VS
+from vision import Vision
 from action import Action
+from debug import Debugger
+from icecream import ic as print
+import time
+
 
 class Node(object):
     def __init__(self, x, y, cost = 0.0, parent = None):
@@ -15,7 +20,7 @@ class Node(object):
         self.parent = parent
 
 class RRT_STAR(object):
-    def __init__(self, expanDis=200, goalSmapleRate=50, maxIter=200):
+    def __init__(self, expanDis=900, goalSmapleRate=50, maxIter=2000):
         self.expand_dis = expanDis
         self.max_iter = maxIter
         self.goal_sample_rate = goalSmapleRate
@@ -80,31 +85,57 @@ class RRT_STAR(object):
             self.path_x.append(self.node_list[index].x)
             self.path_y.append(self.node_list[index].y)
             index = self.node_list[index].parent
+
+
         
         self.path_x.append(self.start.x)
         self.path_y.append(self.start.y)
                     
         self.path_x.reverse()
         self.path_y.reverse()
+
+        # print(self.path_x)
+        # print(self.path_y)
         return self.path_x, self.path_y
 
-    def dynamic_window_approach(self):
+    def dynamic_window_approach(self,vision):
+        self.vision = vision
         dwa = Dwa()
         action = Action()
+        debug = Debugger()
         for i in range(len(self.path_x)-1):
-            start_x = self.path_x[i]
-            start_y = self.path_y[i]
+            start_x = self.vision.my_robot.x
+            start_y = self.vision.my_robot.y
             goal = [self.path_x[i+1], self.path_y[i+1]]
-            x=np.array([start_x, start_y, -1 * math.pi, 0, 0])
+            x=np.array([start_x, start_y, self.vision.my_robot.orientation, 0, 0])
             u=np.array([0,0]) 
             global_tarj=np.array(x)
-            for j in range(100):  
+            while True:  
+                x[0] = self.vision.my_robot.x
+                x[1] = self.vision.my_robot.y
+                x[2] = self.vision.my_robot.orientation
+                start = time.time()
                 u, current = dwa.dwa_Core(x, u, goal, self.obstacle) 
-                x = dwa.Motion(x, u, 0.1)
-                print(x)
-                action.sendCommand(x[0], x[1], x[4])
+                # print("Once DWA Time Cost: ", time.time() - start)
+                # debug.draw_dwa(current[:,0], current[:,1], goal[0], goal[1])
+                debug.draw_all2(self.path_x, self.path_y, vision.my_robot.x, vision.my_robot.y, current[:,0], current[:,1], goal[0], goal[1])
+                # print(current)
+                # print("shape:", current.shape)
+                # x = dwa.Motion(x, u, 0.1)
+                theta = self.vision.my_robot.orientation
+                # print(u)
+                action.sendCommand(u[0], 0, u[1])
+                time.sleep(0.2)
+                # action.sendCommand(0,0,0)
+                x[0] = self.vision.my_robot.x
+                x[1] = self.vision.my_robot.y
+                x[2] = self.vision.my_robot.orientation
+                # time.sleep(0.1)
+                
                 global_tarj=np.vstack((global_tarj,x))
-                if math.hypot(x[0]-self.goal.x, x[1]-self.goal.y) <= self.robot_size/2:  #判断是否到达目标点
+                if math.hypot(x[0]-goal[0], x[1]-goal[1]) <= 500: #self.robot_size/2: #判断是否到达目标点
+                    # action.sendCommand(0,0,0)
+                    
                     print('Arrived')
                     break       
          

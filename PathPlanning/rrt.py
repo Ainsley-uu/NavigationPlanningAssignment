@@ -12,7 +12,7 @@ class Node(object):
         self.parent = parent
 
 class RRT(object):
-    def __init__(self, expanDis=400, goalSmapleRate=50, maxIter=200):
+    def __init__(self, expanDis=900, goalSmapleRate=50, maxIter=200):
         self.expand_dis = expanDis
         self.max_iter = maxIter
         self.goal_sample_rate = goalSmapleRate

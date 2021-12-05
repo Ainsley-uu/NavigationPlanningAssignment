@@ -1,5 +1,7 @@
 import numpy as np
 import math
+from debug import Debugger
+from icecream import ic as print
  
 class Dwa(object):
 #参数设置
@@ -10,14 +12,14 @@ class Dwa(object):
         self.W_Max = 5               #最大角速度
         self.Va = 3000                #加速度
         self.Wa = 5      #角加速度
-        self.Vreso = 10              #速度分辨率
-        self.Wreso = 0.1 * math.pi / 180.0    #角速度分辨率
+        self.Vreso = 400           #速度分辨率
+        self.Wreso = 0.2    #角速度分辨率
         self.radius = 100 
-        self.Dt = 0.1                #时间间隔
-        self.Predict_Time = 4.0      #模拟轨迹的持续时间
-        self.alpha = 1.0             #距离目标点的评价函数的权重系数
-        self.Belta = 1.0             #速度评价函数的权重系数
-        self.Gamma = 1.0             #距离障碍物距离的评价函数的权重系数
+        self.Dt = 0.2             #时间间隔
+        self.Predict_Time = 2     #模拟轨迹的持续时间
+        self.alpha = 0.9            #距离目标点的评价函数的权重系数
+        self.Belta = 0.1            #速度评价函数的权重系数
+        self.Gamma = 100000            #距离障碍物距离的评价函数的权重系数
  
     #距离目标点的评价函数
     def Goal_Cost(Goal,Pos):
@@ -41,8 +43,8 @@ class Dwa(object):
     
     #速度采用
     def V_Range(self, X):
-        Vmin_Actual = X[3]-self.Va*self.Dt          #实际在dt时间间隔内的最小速度
-        Vmax_actual = X[3]+self.Va*self.Dt          #实际载dt时间间隔内的最大速度
+        Vmin_Actual =  X[3]-self.Va*self.Dt          #实际在dt时间间隔内的最小速度
+        Vmax_actual =  X[3]+self.Va*self.Dt          #实际载dt时间间隔内的最大速度
         Wmin_Actual = X[4]-self.Wa*self.Dt          #实际在dt时间间隔内的最小角速度
         Wmax_Actual = X[4]+self.Wa*self.Dt          #实际在dt时间间隔内的最大角速度
         VW = [max(self.V_Min,Vmin_Actual),min(self.V_Max,Vmax_actual),max(self.W_Min,Wmin_Actual),min(self.W_Max,Wmax_Actual)]  #因为前面本身定义了机器人最小最大速度所以这里取交集
@@ -59,10 +61,12 @@ class Dwa(object):
     
     #一条模拟轨迹的完整计算
     def Calculate_Traj(self, X,u):
+        debugger = Debugger()
         Traj=np.array(X)
         Xnew=np.array(X)
         time=0
         while time <= self.Predict_Time:
+            # print(Xnew[2])
             Xnew[0] += u[0] * self.Dt * math.cos(Xnew[2])           #x方向上位置
             Xnew[1] += u[0] * self.Dt * math.sin(Xnew[2])           #y方向上位置
             Xnew[2] += u[1] * self.Dt                     #角度变换
@@ -71,6 +75,7 @@ class Dwa(object):
             # Xnew=self.Motion(Xnew,u,self.Dt)
             Traj=np.vstack((Traj,Xnew))   #一条完整模拟轨迹中所有信息集合成一个矩阵
             time=time+self.Dt
+        # debugger.draw_dwa(Traj[:,0], Traj[:,1])
         return Traj
     
     #DWA核心计算
@@ -78,13 +83,26 @@ class Dwa(object):
         vw=self.V_Range(X)
         best_traj=np.array(X)
         min_score=10000.0                 #随便设置一下初始的最小评价分数
-        for v in np.arange(vw[0], vw[1], self.Vreso):  
+        for v in np.arange(vw[0], vw[1], self.Vreso): 
+            # print(v) 
             for w in np.arange(vw[2], vw[3], self.Wreso):     #对每一个角速度循环
                 traj=self.Calculate_Traj(X,[v,w])
                 goal_score = math.hypot(traj[-1,0]-goal[0], traj[-1,1]-goal[1])
+                # print("goal_score")
+                # print(goal_score)
                 vel_score=self.Velocity_Cost(traj)
+                # print("vel_score")
+                # print(vel_score)
                 obs_score=self.Obstacle_Cost(traj,obstacles)
-                score=goal_score+vel_score+obs_score
+                # print("obs_score")
+                # print(obs_score)
+                goal_score *= self.alpha
+                vel_score *= self.Belta
+                obs_score *= self.Gamma
+                # print(goal_score)
+                # print(vel_score)
+                # print(obs_score)
+                score=goal_score + vel_score + obs_score
                 if min_score>=score:                    #得出最优评分和轨迹
                     min_score=score
                     u=np.array([v,w])

@@ -95,6 +95,31 @@ class Debugger(object):
             line.end.y = y[i] - 50
             line.FORWARD = True
             line.BACK = True
+            
+    def draw_points2(self, package, x, y):
+        for i in range(len(x)):
+            # line 1
+            msg = package.msgs.add()
+            msg.type = Debug_Msg.LINE
+            msg.color = Debug_Msg.RED
+            line = msg.line
+            line.start.x = x[i] + 50
+            line.start.y = y[i] + 50
+            line.end.x = x[i] - 50
+            line.end.y = y[i] - 50
+            line.FORWARD = True
+            line.BACK = True
+            # line 2
+            msg = package.msgs.add()
+            msg.type = Debug_Msg.LINE
+            msg.color = Debug_Msg.RED
+            line = msg.line
+            line.start.x = x[i] - 50
+            line.start.y = y[i] + 50
+            line.end.x = x[i] + 50
+            line.end.y = y[i] - 50
+            line.FORWARD = True
+            line.BACK = True
     
     def draw_roadmap(self, package, sample_x, sample_y, road_map):
         for (i, edges) in zip(range(len(road_map)), road_map):
@@ -131,6 +156,24 @@ class Debugger(object):
         # self.draw_roadmap(package, sample_x, sample_y, road_map)
         self.draw_finalpath(package, path_x, path_y)
         self.sock.sendto(package.SerializeToString(), self.debug_address)
+    
+    def draw_all2(self, path_x, path_y, robot_x, robot_yz, traj_x, traj_y, goal_x, goal_y):
+        package = Debug_Msgs()
+        self.draw_points(package, path_x, path_y)
+        # self.draw_roadmap(package, sample_x, sample_y, road_map)
+        self.draw_finalpath(package, path_x, path_y)
+        self.draw_points2(package, traj_x, traj_y)
+        # self.draw_roadmap(package, sample_x, sample_y, road_map)
+        self.draw_circle(package, goal_x, goal_y, 500)
+        self.sock.sendto(package.SerializeToString(), self.debug_address)
+        
+    def draw_dwa(self, traj_x, traj_y, goal_x, goal_y):
+        package = Debug_Msgs()
+        self.draw_points2(package, traj_x, traj_y)
+        # self.draw_roadmap(package, sample_x, sample_y, road_map)
+        self.draw_circle(package, goal_x, goal_y, 500)
+        self.sock.sendto(package.SerializeToString(), self.debug_address)
+        
     
     def send(self, package):
         self.sock.sendto(package.SerializeToString(), self.debug_address)
