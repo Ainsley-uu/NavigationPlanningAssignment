@@ -89,6 +89,8 @@ class RRT_STAR(object):
         return self.path_x, self.path_y
 
     def dynamic_window_approach(self):
+        dwa = Dwa()
+        action = Action()
         for i in range(len(self.path_x)-1):
             start_x = self.path_x[i]
             start_y = self.path_y[i]
@@ -96,9 +98,7 @@ class RRT_STAR(object):
             x=np.array([start_x, start_y, -1 * math.pi, 0, 0])
             u=np.array([0,0]) 
             global_tarj=np.array(x)
-            for j in range(10):  
-                dwa = Dwa()
-                action = Action()
+            for j in range(100):  
                 u, current = dwa.dwa_Core(x, u, goal, self.obstacle) 
                 x = dwa.Motion(x, u, 0.1)
                 print(x)
