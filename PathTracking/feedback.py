@@ -3,9 +3,9 @@ import math
 import time
 import numpy as np
 
-Kp_rho = 100
-Kp_alpha = 5
-Kp_beta = -1
+Kp_rho = 1800
+Kp_alpha = 10
+Kp_beta = -2
 dt = 0.01
           
 def move_to_pose(vision, path_x, path_y):
@@ -13,10 +13,10 @@ def move_to_pose(vision, path_x, path_y):
     sth_lst = [math.pi]
     gth_lst = []
     
-    for i in range(len(path_x)-1, 0, -1):
-        x_start, y_start = path_x[i] / 100, path_y[i] / 100
-        x_goal, y_goal = path_x[i-1] / 100, path_y[i-1] / 100
-        print(f'sx: {x_start} sy: {y_start} gx: {x_goal} gy: {y_goal}')
+    for i in range(1, len(path_x)):
+        x_goal, y_goal = path_x[i] / 1000, path_y[i] / 1000
+        x_start, y_start = path_x[i-1] / 1000, path_y[i-1] / 1000
+        # print(f'sx: {x_start} sy: {y_start} gx: {x_goal} gy: {y_goal}')
         gth = math.atan2((y_goal - y_start), (x_goal - x_start))
         gth_lst.append(gth)
         x, y = x_start, y_start
@@ -28,7 +28,7 @@ def move_to_pose(vision, path_x, path_y):
         x_traj, y_traj = [], []
 
         rho = np.hypot(x_diff, y_diff)
-        while rho > 1:
+        while rho > 0.1:
             x_traj.append(x)
             y_traj.append(y)
 
@@ -51,7 +51,7 @@ def move_to_pose(vision, path_x, path_y):
             time.sleep(dt)
 
             theta = vision.my_robot.orientation
-            x = vision.my_robot.x / 100
-            y = vision.my_robot.y / 100
+            x = vision.my_robot.x / 1000
+            y = vision.my_robot.y / 1000
             sth_lst.append(gth)
         
